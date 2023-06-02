@@ -59,7 +59,7 @@ func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, attrib
 }
 
 // not using this for v1
-func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler MessageHandler) error {
+func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler func(message []byte) error) error {
 	subscribeOutput, err := ps.snsSvc.Subscribe(&sns.SubscribeInput{
 		Protocol: aws.String("sqs"),
 		Endpoint: aws.String(topicARN),
@@ -79,7 +79,7 @@ func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler MessageHandler) e
 	return nil
 }
 
-func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler MessageHandler) {
+func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message []byte) error) {
 	for {
 		result, err := ps.sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(topicARN),
