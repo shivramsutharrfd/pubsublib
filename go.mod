@@ -1,4 +1,4 @@
-module github.com/shivramsutharrfd/pubsublib
+module github.com/shivramsutharrfd/pubsublib v1.0.0
 
 go 1.19
 
