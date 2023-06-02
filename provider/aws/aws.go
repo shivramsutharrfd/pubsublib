@@ -21,7 +21,7 @@ type AWSPubSubAdapter struct {
 	sqsSvc  sqsiface.SQSAPI
 }
 
-func NewAWSPubSubAdapter(region, accessKeyId, secretAccessKey string) (*AWSPubSubAdapter, error) {
+func NewAWSPubSubAdapter(region string, accessKeyId string, secretAccessKey string) (*AWSPubSubAdapter, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 		Credentials: credentials.NewStaticCredentials(
