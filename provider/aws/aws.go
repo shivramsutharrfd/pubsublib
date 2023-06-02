@@ -1,4 +1,4 @@
-package aws
+package pubsub
 
 import (
 	"log"
@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	pubsub "github.com/Orange-Health/pubsublib"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -60,7 +59,7 @@ func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, attrib
 }
 
 // not using this for v1
-func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler pubsub.MessageHandler) error {
+func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler MessageHandler) error {
 	subscribeOutput, err := ps.snsSvc.Subscribe(&sns.SubscribeInput{
 		Protocol: aws.String("sqs"),
 		Endpoint: aws.String(topicARN),
@@ -80,7 +79,7 @@ func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler pubsub.MessageHan
 	return nil
 }
 
-func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler pubsub.MessageHandler) {
+func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler MessageHandler) {
 	for {
 		result, err := ps.sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(topicARN),
