@@ -1,7 +1,8 @@
-package pusub
+package redis
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -22,8 +23,16 @@ func NewRedisPubSubAdapter(addr string) (*RedisPubSubAdapter, error) {
 	}, nil
 }
 
-func (r *RedisPubSubAdapter) Publish(topicARN string, message interface{}, attributeName string, attributeValue string) error {
-	err := r.client.Publish(r.ctx, topicARN, message).Err()
+func (r *RedisPubSubAdapter) Publish(topicARN string, message interface{}, source string, messageAttributes map[string]interface{}) error {
+	if source == "" {
+		return fmt.Errorf("source cannot be empty")
+	}
+	messageAttributes["source"] = source
+	messageWithAtrributs := map[string]interface{}{
+		"messageAttributs": messageAttributes,
+		"message":          message,
+	}
+	err := r.client.Publish(r.ctx, topicARN, messageWithAtrributs).Err()
 	if err != nil {
 		return err
 	}
