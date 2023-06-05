@@ -45,7 +45,7 @@ func NewAWSPubSubAdapter(region string, accessKeyId string, secretAccessKey stri
 
 func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, attributeName string, attributeValue string) error {
 	b, _ := message.(string)
-	_, err := ps.snsSvc.Publish(&sns.PublishInput{
+	result, err := ps.snsSvc.Publish(&sns.PublishInput{
 		Message:  aws.String(b),
 		TopicArn: aws.String(topicARN),
 		MessageAttributes: map[string]*sns.MessageAttributeValue{
@@ -55,7 +55,12 @@ func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, attrib
 			},
 		},
 	})
-	return err
+	if err != nil {
+		fmt.Println("Error publishing message to SNS:", err)
+		return err
+	}
+	fmt.Println("Published message to SNS with ID:", *result.MessageId)
+	return nil
 }
 
 // not using this for v1
@@ -94,6 +99,7 @@ func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message [
 		}
 
 		for _, message := range result.Messages {
+			fmt.Println("Received message to SQS:", message)
 			err := handler([]byte(*message.Body))
 			if err != nil {
 				log.Println("Error handling message:", err)
