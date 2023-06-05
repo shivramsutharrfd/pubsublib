@@ -1,9 +1,8 @@
-package redis
+package pusub
 
 import (
 	"context"
 
-	pubsub "github.com/Orange-Health/pubsublib"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -31,7 +30,7 @@ func (r *RedisPubSubAdapter) Publish(topicARN string, message interface{}, attri
 	return nil
 }
 
-func (r *RedisPubSubAdapter) PollMessages(topic string, handler pubsub.MessageHandler) error {
+func (r *RedisPubSubAdapter) PollMessages(topic string, handler func(message []byte)) error {
 	pubsub := r.client.Subscribe(r.ctx, topic)
 	defer pubsub.Close()
 
