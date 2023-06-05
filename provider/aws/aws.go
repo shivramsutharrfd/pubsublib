@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -45,9 +46,13 @@ func NewAWSPubSubAdapter(region string, accessKeyId string, secretAccessKey stri
 }
 
 func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, attributeName string, attributeValue string) error {
-	b, _ := message.(string)
+	jsonString, err := json.Marshal(message)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return err
+	}
 	result, err := ps.snsSvc.Publish(&sns.PublishInput{
-		Message:  aws.String(b),
+		Message:  aws.String(string(jsonString)),
 		TopicArn: aws.String(topicARN),
 		MessageAttributes: map[string]*sns.MessageAttributeValue{
 			attributeName: {
