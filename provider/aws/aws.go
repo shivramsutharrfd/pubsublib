@@ -86,35 +86,31 @@ func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler func(message []by
 }
 
 func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message []byte) error) {
-	for {
-		result, err := ps.sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl:            aws.String(topicARN),
-			MaxNumberOfMessages: aws.Int64(10),
-			VisibilityTimeout:   aws.Int64(5),
-			WaitTimeSeconds:     aws.Int64(20),
+	result, err := ps.sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
+		QueueUrl:            aws.String(topicARN),
+		MaxNumberOfMessages: aws.Int64(10),
+		VisibilityTimeout:   aws.Int64(5),
+		WaitTimeSeconds:     aws.Int64(20),
+	})
+
+	if err != nil {
+		log.Println("Error receiving message:", err)
+	}
+
+	for _, message := range result.Messages {
+		fmt.Println("Received message to SQS:", message)
+		err := handler([]byte(*message.Body))
+		if err != nil {
+			log.Println("Error handling message:", err)
+		}
+
+		_, err = ps.sqsSvc.DeleteMessage(&sqs.DeleteMessageInput{
+			QueueUrl:      aws.String(topicARN),
+			ReceiptHandle: message.ReceiptHandle,
 		})
 
 		if err != nil {
-			log.Println("Error receiving message:", err)
-			continue
-		}
-
-		for _, message := range result.Messages {
-			fmt.Println("Received message to SQS:", message)
-			err := handler([]byte(*message.Body))
-			if err != nil {
-				log.Println("Error handling message:", err)
-				continue
-			}
-
-			_, err = ps.sqsSvc.DeleteMessage(&sqs.DeleteMessageInput{
-				QueueUrl:      aws.String(topicARN),
-				ReceiptHandle: message.ReceiptHandle,
-			})
-
-			if err != nil {
-				log.Println("Error deleting message:", err)
-			}
+			log.Println("Error deleting message:", err)
 		}
 	}
 }
