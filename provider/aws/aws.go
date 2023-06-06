@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -172,10 +171,10 @@ func convertToAttributeValue(value interface{}) (*sns.MessageAttributeValue, err
 			DataType:    aws.String("String"),
 			StringValue: aws.String(v),
 		}, nil
-	case int:
+	case int, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		return &sns.MessageAttributeValue{
 			DataType:    aws.String("Number"),
-			StringValue: aws.String(strconv.Itoa(v)),
+			StringValue: aws.String(fmt.Sprint(v)),
 		}, nil
 	// Add more cases for other data types as needed
 
