@@ -76,7 +76,7 @@ func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, source
 	return nil
 }
 
-func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message []byte) error) {
+func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message string) error) {
 	result, err := ps.sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(topicARN),
 		MaxNumberOfMessages: aws.Int64(10),
@@ -90,7 +90,7 @@ func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message [
 
 	for _, message := range result.Messages {
 		fmt.Println("Received message to SQS:", message)
-		err := handler([]byte(*message.Body))
+		err := handler(string(*message.Body))
 		if err != nil {
 			log.Println("Error handling message:", err)
 		}
@@ -107,7 +107,7 @@ func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message [
 }
 
 // not using this for v1
-func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler func(message []byte) error) error {
+func (ps *AWSPubSubAdapter) Subscribe(topicARN string, handler func(message string) error) error {
 	subscribeOutput, err := ps.snsSvc.Subscribe(&sns.SubscribeInput{
 		Protocol: aws.String("sqs"),
 		Endpoint: aws.String(topicARN),
