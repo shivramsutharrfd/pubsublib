@@ -75,7 +75,7 @@ func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, source
 	return nil
 }
 
-func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message string) error) {
+func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message string) error) error {
 	result, err := ps.sqsSvc.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(topicARN),
 		MaxNumberOfMessages: aws.Int64(10),
@@ -84,14 +84,14 @@ func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message s
 	})
 
 	if err != nil {
-		log.Println("Error receiving message:", err)
+		return err
 	}
 
 	for _, message := range result.Messages {
 		fmt.Println("Received message to SQS:", message)
 		err := handler(string(*message.Body))
 		if err != nil {
-			log.Println("Error handling message:", err)
+			return err
 		}
 
 		_, err = ps.sqsSvc.DeleteMessage(&sqs.DeleteMessageInput{
@@ -100,9 +100,10 @@ func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message s
 		})
 
 		if err != nil {
-			log.Println("Error deleting message:", err)
+			return err
 		}
 	}
+	return nil
 }
 
 // not using this for v1
