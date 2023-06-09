@@ -1,8 +1,11 @@
 package aws
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -42,8 +45,19 @@ func NewAWSPubSubAdapter(region string, accessKeyId string, secretAccessKey stri
 	}, nil
 }
 
-func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, messageAttributes map[string]interface{}) error {
-	jsonString, err := json.Marshal(message)
+func (ps *AWSPubSubAdapter) Publish(topicARN string, message interface{}, messageAttributes map[string]interface{}, isCompressed bool) error {
+	finalPayload := message
+	var err error
+	if isCompressed {
+		finalPayload, err = compressPayload(finalPayload)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return err
+		}
+		messageAttributes["isCompressed"] = isCompressed
+	}
+
+	jsonString, err := json.Marshal(compressPayload)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return err
@@ -186,4 +200,62 @@ func convertToAttributeValue(value interface{}) (*sns.MessageAttributeValue, err
 	default:
 		return nil, fmt.Errorf("unsupported attribute value type: %T", value)
 	}
+}
+
+func compressPayload(payload interface{}) ([]byte, error) {
+	// Marshal the payload to JSON
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a buffer to store the compressed data
+	compressedBuffer := new(bytes.Buffer)
+
+	// Create a gzip writer with the compressed buffer
+	gzipWriter := gzip.NewWriter(compressedBuffer)
+
+	// Write the JSON payload to the gzip writer
+	_, err = gzipWriter.Write(jsonBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Close the gzip writer to flush any remaining data
+	err = gzipWriter.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the compressed data as a byte slice
+	compressedPayload := compressedBuffer.Bytes()
+
+	return compressedPayload, nil
+}
+
+func decompressPayload(compressedPayload []byte) (interface{}, error) {
+	compressedReader := bytes.NewReader(compressedPayload)
+
+	// Create a new GZIP reader
+	gzipReader, err := gzip.NewReader(compressedReader)
+	if err != nil {
+		return nil, err
+	}
+	defer gzipReader.Close()
+
+	// Read the decompressed JSON payload from the GZIP reader
+	decompressedBytes, err := ioutil.ReadAll(gzipReader)
+	if err != nil {
+		return nil, err
+	}
+
+	var decompressedPayload interface{}
+
+	// Unmarshal the JSON payload to the original payload type
+	err = json.Unmarshal(decompressedBytes, &decompressedPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressedPayload, nil
 }
