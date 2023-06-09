@@ -69,7 +69,11 @@ func (r *RedisPubSubAdapter) PollMessages(topic string, handler func(message str
 
 	channel := pubsub.Channel()
 	for msg := range channel {
-		handler(string(*&msg.Payload))
+		newData, err := decompressPayload([]byte(*&msg.Payload))
+		if err != nil {
+			return err
+		}
+		handler(fmt.Sprintf("%v", newData))
 	}
 	return nil
 }

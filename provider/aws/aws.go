@@ -102,7 +102,11 @@ func (ps *AWSPubSubAdapter) PollMessages(topicARN string, handler func(message s
 
 	for _, message := range result.Messages {
 		fmt.Println("Received message to SQS:", message)
-		err := handler(string(*message.Body))
+		newData, err := decompressPayload([]byte(*message.Body))
+		if err != nil {
+			return err
+		}
+		err = handler(fmt.Sprintf("%v", newData))
 		if err != nil {
 			return err
 		}
